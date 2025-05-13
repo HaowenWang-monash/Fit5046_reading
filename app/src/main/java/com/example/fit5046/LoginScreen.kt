@@ -60,10 +60,13 @@ fun LoginScreen(navController: NavHostController) {
                 } else {
                     "⚠️ Please enter valid credentials"
                 }
-                // 模拟跳转
+
                 if (isLogin && email.isNotEmpty() && password.length >= 6) {
-                    navController.navigate("home")
+                    navController.navigate("main") {
+                        popUpTo("login") { inclusive = true }
+                    }
                 }
+
             },
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium

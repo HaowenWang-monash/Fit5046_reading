@@ -1,4 +1,5 @@
 package com.example.fit5046
+import androidx.navigation.NavHostController
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,22 +20,27 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             Fit5046Theme {
-                AppNavigation()
+                val navController = rememberNavController()
+                AppNavigation()  // ✅ 只创建一次
             }
         }
     }
 }
 
+
+
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "login") {
+    NavHost(
+        navController = navController,
+        startDestination = "login"
+    ) {
         composable("login") { LoginScreen(navController) }
-        composable("home") { HomeScreen(navController) }
-        composable("today") { TodayRecommendationScreen()}
-        composable("form") { FormScreen() }
-        composable("report") { ReportScreen() }
-        composable("quiz") { GenerateQuizScreen() }
+        composable("main") { MainScreen() }
     }
 }
+
+
+

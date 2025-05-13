@@ -15,10 +15,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import java.util.*
 
 @Composable
-fun FormScreen() {
+fun FormScreen(navController: NavHostController) {
     val context = LocalContext.current
 
     var name by remember { mutableStateOf("") }

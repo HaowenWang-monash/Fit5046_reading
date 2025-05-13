@@ -54,9 +54,9 @@ dependencies {
     implementation(libs.mpandroidchart)
     implementation(libs.androidx.navigation.compose)
     implementation ("com.google.firebase:firebase-auth-ktx:22.3.1")
-
+    implementation("androidx.navigation:navigation-compose:2.6.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
-
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
 
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation(libs.androidx.navigation.runtime.android)

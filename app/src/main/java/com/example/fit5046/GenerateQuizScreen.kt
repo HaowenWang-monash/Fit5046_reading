@@ -11,9 +11,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.launch
 import com.google.gson.Gson
-
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 @Composable
 fun GenerateQuizScreen() {
+    val scrollState = rememberScrollState()
     var input by remember { mutableStateOf("") }
     var paragraph by remember { mutableStateOf("") }
     var quiz by remember { mutableStateOf<List<QuizQuestion>>(emptyList()) }
@@ -23,6 +25,7 @@ fun GenerateQuizScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
+        .verticalScroll(scrollState)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -72,7 +75,7 @@ fun GenerateQuizScreen() {
                         return@launch
                     }
 
-                    // ✅ Step 2: 生成 quiz
+
                     try {
                         val quizPrompt = """
                             You are a quiz generator.
