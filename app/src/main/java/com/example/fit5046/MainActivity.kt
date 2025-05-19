@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             Fit5046Theme {
                 val navController = rememberNavController()
-                AppNavigation()  // ✅ 只创建一次
+                AppNavigation()  
             }
         }
     }

@@ -28,35 +28,30 @@ fun HomeScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Choose what you want to explore today:",
+            text = "Choose a subject to begin:",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Buttons in cards
         HomeCardButton(
-            label = "🌟 Today’s Recommended Reading",
-            onClick = { navController.navigate("today") }
+            label = "📘 English Reading",
+            onClick = { navController.navigate("quiz_english") }
         )
 
         HomeCardButton(
-            label = "📝 Fill Your Preferences",
-            onClick = { navController.navigate("form") }
+            label = "🔬 Science Knowledge",
+            onClick = { navController.navigate("science") }
         )
 
         HomeCardButton(
-            label = "📊 View Your Report",
-            onClick = { navController.navigate("report") }
-        )
-
-        HomeCardButton(
-            label = "🎯 Generate Quiz",
-            onClick = { navController.navigate("quiz") }
+            label = "➗ Math Practice",
+            onClick = { navController.navigate("math") }
         )
     }
 }
+
 
 @Composable
 fun HomeCardButton(label: String, onClick: () -> Unit) {
