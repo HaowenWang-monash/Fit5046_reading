@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services") // firebase
 }
 
 android {
@@ -53,10 +54,10 @@ dependencies {
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation(libs.mpandroidchart)
     implementation(libs.androidx.navigation.compose)
-    implementation ("com.google.firebase:firebase-auth-ktx:22.3.1")
-    implementation("androidx.navigation:navigation-compose:2.6.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
+
+    implementation ("com.google.firebase:firebase-auth-ktx:22.3.1") // Firebase Auth
 
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation(libs.androidx.navigation.runtime.android)
