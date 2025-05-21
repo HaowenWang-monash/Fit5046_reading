@@ -33,24 +33,25 @@ fun TestDatabaseScreen() {
 
         Button(onClick = {
             scope.launch {
-                val startDate = "2025-01-01"
+                val stats = dao.getAllStats()
 
-                // ✅ 替代 LocalDate.now()
-                val endDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                    .format(Date())
-
-                dao.getStatsBetweenDates(startDate, endDate).collect { stats ->
-                    if (stats.isEmpty()) {
-                        Log.d("QuizStats", "⚠️ No records found.")
-                    } else {
-                        stats.forEach {
-                            Log.d("QuizStats", "✅ ${it.date} | ${it.subject} | total: ${it.total}, correct: ${it.correct}")
-                        }
+                if (stats.isEmpty()) {
+                    Log.d("QuizStats", "⚠️ No records found.")
+                } else {
+                    stats.forEach {
+                        Log.d(
+                            "QuizStats",
+                            "✅ ${it.date} | ${it.category} | ${it.userId} | total: ${it.totalQuestions}, correct: ${it.correctAnswers}"
+                        )
                     }
                 }
             }
         }) {
             Text("🔍 Print All Stats to Logcat")
         }
+
     }
 }
+
+
+

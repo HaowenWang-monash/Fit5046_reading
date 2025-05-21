@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             Fit5046Theme {
                 val navController = rememberNavController()
-                AppNavigation()  
+                AppNavigation(navController)
             }
         }
     }
@@ -30,15 +30,13 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun AppNavigation() {
-    val navController = rememberNavController()
-
+fun AppNavigation(navController: NavHostController) {
     NavHost(
         navController = navController,
         startDestination = "login"
     ) {
         composable("login") { LoginScreen(navController) }
-        composable("main") { MainScreen() }
+        composable("main") { MainScreen(navController) }
     }
 }
 

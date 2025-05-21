@@ -17,18 +17,22 @@ import com.example.fit5046.model.QuizQuestion
 import com.example.fit5046.data.AppDatabase
 import com.example.fit5046.data.QuizDailyStat
 import java.time.LocalDate
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 @Composable
 fun ScienceQuizScreen() {
+    val context = LocalContext.current
+    val dao = AppDatabase.getDatabase(context).quizStatDao()
+    val userId = Firebase.auth.currentUser?.uid ?: "anonymous"
+
     val topics = listOf("Animals", "Plants", "Space", "Weather", "Human Body")
     var selectedTopic by remember { mutableStateOf(topics.first()) }
-    var paragraph by remember { mutableStateOf("") }
     var quiz by remember { mutableStateOf<List<QuizQuestion>>(emptyList()) }
     val userAnswers = remember { mutableStateMapOf<Int, String>() }
     var score by remember { mutableStateOf<Int?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -37,76 +41,74 @@ fun ScienceQuizScreen() {
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "🔬 Science Quiz",
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text("🔬 Science Quiz", fontSize = 26.sp, fontWeight = FontWeight.Bold)
 
         Spacer(modifier = Modifier.height(16.dp))
-
         Text("Choose a topic:")
 
-        DropdownMenuWithSelectedItem(
-            items = topics,
-            selectedItem = selectedTopic,
-            onItemSelected = { selectedTopic = it }
-        )
+        var expanded by remember { mutableStateOf(false) }
+
+        Box {
+            OutlinedButton(onClick = { expanded = true }) {
+                Text(selectedTopic)
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                topics.forEach {
+                    DropdownMenuItem(
+                        text = { Text(it) },
+                        onClick = {
+                            selectedTopic = it
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = {
-                scope.launch {
-                    isLoading = true
-                    score = null
-                    userAnswers.clear()
-                    quiz = emptyList()
+        Button(onClick = {
+            scope.launch {
+                isLoading = true
+                score = null
+                userAnswers.clear()
+                quiz = emptyList()
 
-                    try {
-                        val prompt = """
-                                You are a science quiz generator.
-                                Based ONLY on the topic \"$selectedTopic\", generate exactly 3 multiple-choice science questions for children.
-                                
-                                Return ONLY a JSON array like this:
-                                [
-                                    {
-                                        "question": "...",
-                                        "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
-                                        "correct": "A"
-                                    },
-                                    ...
-                                ]
-                                ❗No explanations. No paragraph. No markdown. Only raw JSON array.
-                            """.trimIndent()
+                try {
+                    val prompt = """
+                        Based on "$selectedTopic", generate 3 multiple-choice science questions for children.
+                        Return raw JSON array like:
+                        [{"question":"...","options":["A...","B...","C...","D..."],"correct":"A"}, ...]
+                    """.trimIndent()
 
-                        val response = RetrofitClient.api.getResponse(
-                            ChatRequest(
-                                model = "mistralai/mistral-7b-instruct",
-                                messages = listOf(
-                                    ChatMessage("system", "You generate science quizzes for kids."),
-                                    ChatMessage("user", prompt)
-                                )
+                    val response = RetrofitClient.api.getResponse(
+                        ChatRequest(
+                            model = "mistralai/mistral-7b-instruct",
+                            messages = listOf(
+                                ChatMessage("system", "You generate science quizzes for kids."),
+                                ChatMessage("user", prompt)
                             )
                         )
+                    )
 
-                        val json = response.choices.first().message.content
-                            .replace("```json", "")
-                            .replace("```", "")
-                            .replace("“", "\"")
-                            .replace("”", "\"")
-                            .trim()
+                    val json = response.choices.first().message.content
+                        .replace("```json", "")
+                        .replace("```", "")
+                        .replace("“", "\"")
+                        .replace("”", "\"")
+                        .trim()
 
-                        quiz = Gson().fromJson(json, Array<QuizQuestion>::class.java).toList()
-                    } catch (e: Exception) {
-                        paragraph = "⚠️ Failed to generate quiz: ${e.message}"
-                    }
-
-                    isLoading = false
+                    quiz = Gson().fromJson(json, Array<QuizQuestion>::class.java).toList()
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            },
-            enabled = !isLoading
-        ) {
+
+                isLoading = false
+            }
+        }) {
             Text("🚀 Generate Quiz")
         }
 
@@ -116,121 +118,64 @@ fun ScienceQuizScreen() {
             CircularProgressIndicator()
         }
 
-        if (quiz.isNotEmpty()) {
-            quiz.forEachIndexed { index, q ->
-                Text(
-                    text = "${index + 1}. ${q.question}",
-                    fontWeight = FontWeight.Medium
-                )
+        quiz.forEachIndexed { index, q ->
+            Text("${index + 1}. ${q.question}", fontWeight = FontWeight.Medium)
+            q.options.forEach { option ->
+                val letter = option.substringBefore(". ").trim()
+                val selected = userAnswers[index] == letter
+                val isCorrect = score != null && q.correct == letter
 
-                q.options.forEach { option ->
-                    val letter = option.substringBefore(". ").trim()
-                    val selected = userAnswers[index] == letter
-                    val isCorrect = score != null && q.correct == letter
+                val color = if (score != null) {
+                    if (isCorrect) MaterialTheme.colorScheme.primary
+                    else if (selected) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurface
+                } else MaterialTheme.colorScheme.onSurface
 
-                    val color = if (score != null) {
-                        if (isCorrect) MaterialTheme.colorScheme.primary
-                        else if (selected) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = selected,
-                            onClick = { userAnswers[index] = letter },
-                            enabled = score == null
-                        )
-                        Text(option, color = color)
-                    }
-                }
-
-                if (score != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "✔ Correct answer: ${q.correct}",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodySmall
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = selected,
+                        onClick = { userAnswers[index] = letter },
+                        enabled = score == null
                     )
+                    Text(option, color = color)
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            if (score == null) {
-                Button(onClick = {
-                    var correctCount = 0
-                    quiz.forEachIndexed { i, q ->
-                        val correct = q.correct.trim()
-                        val selected = userAnswers[i]?.trim()
-                        if (correct == selected) correctCount++
-                    }
-                    score = correctCount
-                }) {
-                    Text("✅ Submit Answers")
-                }
-            } else {
-                Text(
-                    text = "You got $score/${quiz.size} correct!",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
-                val dao = AppDatabase.getDatabase(context).quizStatDao()
+        if (quiz.isNotEmpty() && score == null) {
+            Button(onClick = {
+                val correctCount = quiz.indices.count { i ->
+                    userAnswers[i]?.trim() == quiz[i].correct.trim()
+                }
+                score = correctCount
+
                 val today = LocalDate.now().toString()
-                val subject = "Science"
-                val totalCount = quiz.size
-                val correctCount = score ?: 0
-
-                LaunchedEffect(Unit) {
-                    val existing = dao.getStatByDateAndSubject(today, subject)
-                    if (existing != null) {
-                        dao.update(existing.copy(
-                            total = existing.total + totalCount,
-                            correct = existing.correct + correctCount
-                        ))
-                    } else {
-                        dao.insert(QuizDailyStat(
-                            date = today,
-                            subject = subject,
-                            total = totalCount,
-                            correct = correctCount
-                        ))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DropdownMenuWithSelectedItem(
-    items: List<String>,
-    selectedItem: String,
-    onItemSelected: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
-        OutlinedButton(onClick = { expanded = true }) {
-            Text(selectedItem)
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            items.forEach { item ->
-                DropdownMenuItem(
-                    text = { Text(item) },
-                    onClick = {
-                        onItemSelected(item)
-                        expanded = false
-                    }
+                val stat = QuizDailyStat(
+                    userId = userId,
+                    date = today,
+                    category = "Science",
+                    totalQuestions = quiz.size,
+                    correctAnswers = correctCount
                 )
+
+                scope.launch { dao.insert(stat) }
+            }) {
+                Text("✅ Submit Answers")
             }
+        }
+
+        score?.let {
+            Text(
+                text = "You got $it/${quiz.size} correct!",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
+
+
 
 

@@ -17,6 +17,9 @@ import com.example.fit5046.data.QuizDailyStat
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun MathQuizScreen() {
@@ -70,9 +73,9 @@ fun MathQuizScreen() {
                             Return ONLY a JSON array like this:
                             [
                                 {
-                                    \"question\": \"...\",
-                                    \"options\": [\"A. ...\", \"B. ...\", \"C. ...\", \"D. ...\"],
-                                    \"correct\": \"A\"
+                                    "question": "...",
+                                    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+                                    "correct": "A"
                                 }
                             ]
                             ❗ No explanations. No markdown. Just a valid JSON array.
@@ -175,26 +178,29 @@ fun MathQuizScreen() {
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                //  database
+                // ✅ Save to database
                 val dao = AppDatabase.getDatabase(context).quizStatDao()
                 val today = LocalDate.now().toString()
-                val subject = "Math"
+                val category = "Math"
                 val totalCount = quiz.size
                 val correctCount = score ?: 0
+                val auth = FirebaseAuth.getInstance()
+                val userId = auth.currentUser?.uid ?: return
 
                 LaunchedEffect(Unit) {
-                    val existing = dao.getStatByDateAndSubject(today, subject)
+                    val existing = dao.getStatByDateAndCategory(today, category, userId)
                     if (existing != null) {
                         dao.update(existing.copy(
-                            total = existing.total + totalCount,
-                            correct = existing.correct + correctCount
+                            totalQuestions = existing.totalQuestions + totalCount,
+                            correctAnswers = existing.correctAnswers + correctCount
                         ))
                     } else {
                         dao.insert(QuizDailyStat(
+                            userId = userId,
                             date = today,
-                            subject = subject,
-                            total = totalCount,
-                            correct = correctCount
+                            category = category,
+                            totalQuestions = totalCount,
+                            correctAnswers = correctCount
                         ))
                     }
                 }
@@ -202,7 +208,6 @@ fun MathQuizScreen() {
         }
     }
 }
-
 @Composable
 fun DropdownMenuWithSelectedItem_math(
     items: List<String>,

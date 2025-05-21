@@ -19,6 +19,9 @@ import com.example.fit5046.model.QuizQuestion
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+
 
 @Composable
 fun GenerateQuizScreen() {
@@ -31,6 +34,9 @@ fun GenerateQuizScreen() {
     var score by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val auth = Firebase.auth
+    val currentUser = auth.currentUser
+    val userId = currentUser?.uid ?: "guest"
 
     Column(
         modifier = Modifier
@@ -199,19 +205,20 @@ fun GenerateQuizScreen() {
                     val totalCount = quiz.size
 
                     scope.launch {
-                        val existing = dao.getStatByDateAndSubject(today, subject)
+                        val existing = dao.getStatByDateAndCategory(today, subject, userId)
                         if (existing != null) {
                             dao.update(existing.copy(
-                                total = existing.total + totalCount,
-                                correct = existing.correct + correctCount
+                                totalQuestions = existing.totalQuestions + totalCount,
+                                correctAnswers = existing.correctAnswers + correctCount
                             ))
                         } else {
                             dao.insert(
                                 QuizDailyStat(
+                                    userId = userId,
                                     date = today,
-                                    subject = subject,
-                                    total = totalCount,
-                                    correct = correctCount
+                                    category = subject,
+                                    totalQuestions = totalCount,
+                                    correctAnswers = correctCount
                                 )
                             )
                         }
@@ -234,4 +241,3 @@ inline fun <T> List<T>.countIndexed(predicate: (Int, T) -> Boolean): Int {
     forEachIndexed { i, item -> if (predicate(i, item)) count++ }
     return count
 }
-
