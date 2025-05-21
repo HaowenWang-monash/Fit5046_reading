@@ -1,19 +1,28 @@
 package com.example.fit5046
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import kotlinx.coroutines.launch
-import com.google.gson.Gson
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.fit5046.data.AppDatabase
+import com.example.fit5046.data.QuizDailyStat
 import com.example.fit5046.model.QuizQuestion
+import com.google.gson.Gson
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+
+
 @Composable
 fun GenerateQuizScreen() {
     val scrollState = rememberScrollState()
@@ -24,6 +33,10 @@ fun GenerateQuizScreen() {
     val userAnswers = remember { mutableStateMapOf<Int, String>() }
     var score by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val auth = Firebase.auth
+    val currentUser = auth.currentUser
+    val userId = currentUser?.uid ?: "guest"
 
     Column(
         modifier = Modifier
@@ -144,14 +157,35 @@ fun GenerateQuizScreen() {
                     Text("${i + 1}. ${q.question}", fontWeight = FontWeight.Medium)
 
                     q.options.forEach { option ->
-                        val letter = option.substringBefore(".")
+                        val letter = option.substringBefore(".").trim()
+                        val selected = userAnswers[i] == letter
+                        val isCorrect = score != null && q.correct == letter
+
+                        val color = if (score != null) {
+                            if (isCorrect) MaterialTheme.colorScheme.primary
+                            else if (selected) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
+
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
-                                selected = userAnswers[i] == letter,
-                                onClick = { userAnswers[i] = letter }
+                                selected = selected,
+                                onClick = { userAnswers[i] = letter },
+                                enabled = score == null
                             )
-                            Text(option, modifier = Modifier.padding(start = 4.dp))
+                            Text(option, modifier = Modifier.padding(start = 4.dp), color = color)
                         }
+                    }
+
+                    if (score != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "✔ Correct answer: ${q.correct}",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -160,8 +194,34 @@ fun GenerateQuizScreen() {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(onClick = {
-                    score = quiz.countIndexed { index, question ->
+                    val correctCount = quiz.countIndexed { index, question ->
                         userAnswers[index] == question.correct
+                    }
+                    score = correctCount
+
+                    val dao = AppDatabase.getDatabase(context).quizStatDao()
+                    val today = LocalDate.now().toString()
+                    val subject = "English"
+                    val totalCount = quiz.size
+
+                    scope.launch {
+                        val existing = dao.getStatByDateAndCategory(today, subject, userId)
+                        if (existing != null) {
+                            dao.update(existing.copy(
+                                totalQuestions = existing.totalQuestions + totalCount,
+                                correctAnswers = existing.correctAnswers + correctCount
+                            ))
+                        } else {
+                            dao.insert(
+                                QuizDailyStat(
+                                    userId = userId,
+                                    date = today,
+                                    category = subject,
+                                    totalQuestions = totalCount,
+                                    correctAnswers = correctCount
+                                )
+                            )
+                        }
                     }
                 }) {
                     Text("📩 Submit")

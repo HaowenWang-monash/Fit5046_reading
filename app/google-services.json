@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "623805427009",
+    "project_id": "fit5046-reading-app",
+    "storage_bucket": "fit5046-reading-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:623805427009:android:44a7d2d1b99505e6b145c0",
+        "android_client_info": {
+          "package_name": "com.example.fit5046"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxiknu8OoiFVS2p4ZH-gBQbKRl32Hoi4w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
