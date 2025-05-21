@@ -49,9 +49,13 @@ fun HomeScreen(navController: NavController) {
             label = "➗ Math Practice",
             onClick = { navController.navigate("math") }
         )
+
+        HomeCardButton(
+            label = "🧪 Test Database",
+            onClick = { navController.navigate("test_db") }
+        )
     }
 }
-
 
 @Composable
 fun HomeCardButton(label: String, onClick: () -> Unit) {

@@ -25,10 +25,11 @@ fun MainScreen() {
             composable(BottomNavItem.Form.route) { FormScreen(navController) }
             composable(BottomNavItem.Report.route) { ReportScreen(navController) }
             composable(BottomNavItem.Quiz.route) { GenerateQuizScreen() }
+            composable("test_db") { TestDatabaseScreen() }
 
             composable("quiz_english") { GenerateQuizScreen() }
             composable("science") { ScienceQuizScreen() }
-
+            composable("math") { MathQuizScreen() }
 
 
         }

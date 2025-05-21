@@ -7,12 +7,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import com.example.fit5046.model.QuizQuestion
+import com.example.fit5046.data.AppDatabase
+import com.example.fit5046.data.QuizDailyStat
+import java.time.LocalDate
+
 @Composable
 fun ScienceQuizScreen() {
     val topics = listOf("Animals", "Plants", "Space", "Weather", "Human Body")
@@ -23,6 +28,7 @@ fun ScienceQuizScreen() {
     var score by remember { mutableStateOf<Int?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -59,20 +65,20 @@ fun ScienceQuizScreen() {
 
                     try {
                         val prompt = """
-                            You are a science quiz generator.
-                            Based on the topic "$selectedTopic", generate a paragraph for young students,
-                            and then generate 3 multiple-choice science questions based on it.
-
-                            Return ONLY a JSON array like:
-                            [
-                                {
-                                    "question": "...",
-                                    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
-                                    "correct": "A"
-                                }, ...
-                            ]
-                            No explanations. No markdown.
-                        """.trimIndent()
+                                You are a science quiz generator.
+                                Based ONLY on the topic \"$selectedTopic\", generate exactly 3 multiple-choice science questions for children.
+                                
+                                Return ONLY a JSON array like this:
+                                [
+                                    {
+                                        "question": "...",
+                                        "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+                                        "correct": "A"
+                                    },
+                                    ...
+                                ]
+                                ❗No explanations. No paragraph. No markdown. Only raw JSON array.
+                            """.trimIndent()
 
                         val response = RetrofitClient.api.getResponse(
                             ChatRequest(
@@ -140,6 +146,15 @@ fun ScienceQuizScreen() {
                     }
                 }
 
+                if (score != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "✔ Correct answer: ${q.correct}",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -161,6 +176,29 @@ fun ScienceQuizScreen() {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
+
+                val dao = AppDatabase.getDatabase(context).quizStatDao()
+                val today = LocalDate.now().toString()
+                val subject = "Science"
+                val totalCount = quiz.size
+                val correctCount = score ?: 0
+
+                LaunchedEffect(Unit) {
+                    val existing = dao.getStatByDateAndSubject(today, subject)
+                    if (existing != null) {
+                        dao.update(existing.copy(
+                            total = existing.total + totalCount,
+                            correct = existing.correct + correctCount
+                        ))
+                    } else {
+                        dao.insert(QuizDailyStat(
+                            date = today,
+                            subject = subject,
+                            total = totalCount,
+                            correct = correctCount
+                        ))
+                    }
+                }
             }
         }
     }
@@ -194,6 +232,5 @@ fun DropdownMenuWithSelectedItem(
         }
     }
 }
-
 
 
