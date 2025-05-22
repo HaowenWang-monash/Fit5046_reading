@@ -42,6 +42,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+
 @Composable
 fun ReportScreen(navController: NavHostController) {
     val context = LocalContext.current
@@ -126,7 +127,7 @@ fun ReportScreen(navController: NavHostController) {
                         setEntryLabelTextSize(12f)
                         setCenterTextSize(16f)
                         setUsePercentValues(true)
-                        setDrawEntryLabels(false)
+                        setDrawEntryLabels(true)
                         legend.isEnabled = true
                         invalidate()
 
@@ -170,33 +171,50 @@ fun ReportScreen(navController: NavHostController) {
             AndroidView(
                 factory = { ctx ->
                     BarChart(ctx).apply {
-                        val entries = dailyStats.mapIndexed { index, stat ->
-                            BarEntry(index.toFloat(), stat.correctAnswers.toFloat())
+                        val correctEntries = mutableListOf<BarEntry>()
+                        val totalEntries = mutableListOf<BarEntry>()
+                        dailyStats.forEachIndexed { index, stat ->
+                            correctEntries.add(BarEntry(index.toFloat(), stat.correctAnswers.toFloat()))
+                            totalEntries.add(BarEntry(index.toFloat(), stat.totalQuestions.toFloat()))
                         }
 
                         val labels = dailyStats.map { it.date }
 
-                        val dataSet = BarDataSet(entries, "Correct Answers Per Day").apply {
-                            colors = ColorTemplate.MATERIAL_COLORS.toList()
+                        val correctDataSet = BarDataSet(correctEntries, "Correct Answers").apply {
+                            color = ColorTemplate.MATERIAL_COLORS[0]
                             valueTextSize = 12f
                         }
-                        val barData = BarData(dataSet)
-                        barData.barWidth = 0.4f // set width for each bar
+
+                        val totalDataSet = BarDataSet(totalEntries, "Total Questions").apply {
+                            color = Color.rgb(52, 152, 219)
+                            valueTextSize = 12f
+                        }
+
+                        val barData = BarData(correctDataSet, totalDataSet)
+                        barData.barWidth = 0.3f // narrow bars
+
+// Grouping setup
+                        val groupSpace = 0.2f
+                        val barSpace = 0.05f // space between bars within group
+                        barData.groupBars(0f, groupSpace, barSpace)
 
                         data = barData
+                        setVisibleXRangeMaximum(5f) //shows limited range
+                        invalidate()
 
                         xAxis.apply {
                             valueFormatter = IndexAxisValueFormatter(labels)
                             position = XAxis.XAxisPosition.BOTTOM
                             granularity = 1f
-                            setDrawLabels(true)
-                            labelRotationAngle = -45f
-                            setCenterAxisLabels(false)
+                            labelRotationAngle = 0f
+                            setCenterAxisLabels(true)
+                            axisMinimum = 0f
+                            axisMaximum = dailyStats.size.toFloat()
                         }
                         axisLeft.axisMinimum = 0f
                         axisRight.isEnabled = false
                         description.isEnabled = false
-                        legend.isEnabled = false
+                        legend.isEnabled = true
 
                         setFitBars(true)
                         invalidate()
@@ -204,6 +222,14 @@ fun ReportScreen(navController: NavHostController) {
                 }, modifier = Modifier
                     .fillMaxWidth()
                     .height(300.dp)
+            )
+
+            Spacer(modifier = Modifier.height(1.dp))
+            Text(
+                text = "correct vs total per day",
+                fontSize = 12.sp,
+                color = ComposeColor.Gray,
+                modifier = Modifier.padding(start = 8.dp)
             )
 
         } else {

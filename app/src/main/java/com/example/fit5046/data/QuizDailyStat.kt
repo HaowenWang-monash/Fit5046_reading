@@ -17,7 +17,8 @@ data class QuizDailyStat(
 
 data class DailyStat(
     val date: String,
-    val correctAnswers: Int
+    val correctAnswers: Int,
+    val totalQuestions: Int
 )
 
 data class CategoryStat(
