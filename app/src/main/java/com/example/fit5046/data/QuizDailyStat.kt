@@ -19,3 +19,9 @@ data class DailyStat(
     val date: String,
     val correctAnswers: Int
 )
+
+data class CategoryStat(
+    val category: String,
+    val correctAnswers: Int
+)
+

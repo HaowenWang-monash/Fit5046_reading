@@ -27,8 +27,11 @@ interface QuizStatDao {
     @Query("SELECT * FROM quiz_daily_stats WHERE userId = :userId")
     suspend fun getStatsForUser(userId: String): List<QuizDailyStat>
 
-    @Query("SELECT date, SUM(correctAnswers) AS correctAnswers FROM quiz_daily_stats WHERE userId = :userId GROUP BY date ORDER BY date ASC")
+    @Query("SELECT DATE(date) as date, SUM(correctAnswers) AS correctAnswers FROM quiz_daily_stats WHERE userId = :userId GROUP BY DATE(date) ORDER BY DATE(date) ASC")
     suspend fun getDailyCorrectAnswers(userId: String): List<DailyStat>
+
+    @Query("SELECT category, SUM(correctAnswers) as correctAnswers FROM quiz_daily_stats WHERE userId = :userId GROUP BY category")
+    suspend fun getCategoryCorrectAnswers(userId: String): List<CategoryStat>
 
 }
 
