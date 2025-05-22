@@ -23,6 +23,9 @@ interface QuizStatDao {
 
     @Query("SELECT * FROM quiz_daily_stats ORDER BY date DESC")
     suspend fun getAllStats(): List<QuizDailyStat>
+
+    @Query("SELECT * FROM quiz_daily_stats WHERE userId = :userId")
+    fun getStatsForUser(userId: String): List<QuizDailyStat>
 }
 
 
