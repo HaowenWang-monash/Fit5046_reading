@@ -78,10 +78,20 @@ fun ScienceQuizScreen() {
 
                     try {
                         val prompt = """
-                            Based on "$selectedTopic", generate 3 multiple-choice science questions for children.
-                            Return raw JSON array like:
-                            [{"question":"...","options":["A...","B...","C...","D..."],"correct":"A"}]
-                        """.trimIndent()
+                        You are a science quiz generator.
+                        Based ONLY on the topic "$selectedTopic", generate exactly 3 multiple-choice science questions suitable for children aged 10 to 15.
+                    
+                        Return ONLY a JSON array like this:
+                        [
+                            {
+                                "question": "...",
+                                "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+                                "correct": "A"
+                            }
+                        ]
+                        ❗ No explanations. No markdown. Just a valid JSON array.
+                    """.trimIndent()
+
 
                         val response = RetrofitClient.api.getResponse(
                             ChatRequest(

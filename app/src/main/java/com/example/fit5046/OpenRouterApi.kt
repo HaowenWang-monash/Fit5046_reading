@@ -7,6 +7,6 @@ interface OpenRouterApi {
     @POST("chat/completions")
     suspend fun getResponse(
         @Body request: ChatRequest,
-        @Header("Authorization") token: String = "Bearer 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"
+        @Header("Authorization") token: String = "Bearer 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"
     ): ChatResponse
 }
