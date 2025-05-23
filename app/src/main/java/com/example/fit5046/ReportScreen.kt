@@ -59,18 +59,24 @@ fun ReportScreen(navController: NavHostController) {
 
 
     // Fetch data once
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            val stats = dao.getStatsForUser(userId)
-            overallCorrectAnswers = stats.sumOf { it.correctAnswers }
-            overallTotalQuestions = stats.sumOf { it.totalQuestions }
-            dailyStats = dao.getDailyCorrectAnswers(userId)
-            Log.d("DAILY_STATS", dailyStats.joinToString("\n")
-            {
-                "Date: ${it.date}, Correct: ${it.correctAnswers}"
-            }) //print the content of dailyStats, comment off after debugging
-            allStats = stats
-        }
+    LaunchedEffect(userId) {
+        snapshotFlow { selectedCategory }
+            .collect { category ->
+                withContext(Dispatchers.IO) {
+                    val stats = dao.getStatsForUser(userId)
+                    overallCorrectAnswers = stats.sumOf { it.correctAnswers }
+                    overallTotalQuestions = stats.sumOf { it.totalQuestions }
+                    dailyStats = if (selectedCategory == "Total") {
+                        dao.getDailyCorrectAnswers(userId)
+                    } else {
+                        dao.getDailyCorrectAnswersForCategory(userId, selectedCategory)
+                    }
+                    Log.d("DAILY_STATS", dailyStats.joinToString("\n") {
+                        "Category: $selectedCategory, Date: ${it.date}, Correct: ${it.correctAnswers}, Total: ${it.totalQuestions}"
+                    }) //print the content of dailyStats, comment off after debugging
+                    allStats = stats
+                }
+            }
     }
 
     val categoryStatsMap = remember(allStats) {
@@ -95,7 +101,7 @@ fun ReportScreen(navController: NavHostController) {
             .fillMaxSize()
             .padding(24.dp)
     ) {
-        Text("📊 Weekly Progress", fontSize = 24.sp)
+        Text("📊 Your Progress", fontSize = 24.sp)
 
         CategorySelector( // calls selector bar
             selectedCategory = selectedCategory,
@@ -168,62 +174,74 @@ fun ReportScreen(navController: NavHostController) {
         Spacer(modifier = Modifier.height(32.dp))
         Text("📅 Daily Correct Answers", fontSize = 20.sp)
         if (dailyStats.isNotEmpty()) {
-            AndroidView(
-                factory = { ctx ->
-                    BarChart(ctx).apply {
-                        val correctEntries = mutableListOf<BarEntry>()
-                        val totalEntries = mutableListOf<BarEntry>()
-                        dailyStats.forEachIndexed { index, stat ->
-                            correctEntries.add(BarEntry(index.toFloat(), stat.correctAnswers.toFloat()))
-                            totalEntries.add(BarEntry(index.toFloat(), stat.totalQuestions.toFloat()))
-                        }
+            key(selectedCategory) {
+                AndroidView(
+                    factory = { ctx ->
+                        BarChart(ctx).apply {
+                            val correctEntries = mutableListOf<BarEntry>()
+                            val totalEntries = mutableListOf<BarEntry>()
+                            dailyStats.forEachIndexed { index, stat ->
+                                correctEntries.add(
+                                    BarEntry(
+                                        index.toFloat(),
+                                        stat.correctAnswers.toFloat()
+                                    )
+                                )
+                                totalEntries.add(
+                                    BarEntry(
+                                        index.toFloat(),
+                                        stat.totalQuestions.toFloat()
+                                    )
+                                )
+                            }
 
-                        val labels = dailyStats.map { it.date }
+                            val labels = dailyStats.map { it.date }
 
-                        val correctDataSet = BarDataSet(correctEntries, "Correct Answers").apply {
-                            color = ColorTemplate.MATERIAL_COLORS[0]
-                            valueTextSize = 12f
-                        }
+                            val correctDataSet =
+                                BarDataSet(correctEntries, "Correct Answers").apply {
+                                    color = ColorTemplate.MATERIAL_COLORS[0]
+                                    valueTextSize = 12f
+                                }
 
-                        val totalDataSet = BarDataSet(totalEntries, "Total Questions").apply {
-                            color = Color.rgb(52, 152, 219)
-                            valueTextSize = 12f
-                        }
+                            val totalDataSet = BarDataSet(totalEntries, "Total Questions").apply {
+                                color = Color.rgb(52, 152, 219)
+                                valueTextSize = 12f
+                            }
 
-                        val barData = BarData(correctDataSet, totalDataSet)
-                        barData.barWidth = 0.3f // narrow bars
+                            val barData = BarData(correctDataSet, totalDataSet)
+                            barData.barWidth = 0.3f // narrow bars
 
 // Grouping setup
-                        val groupSpace = 0.2f
-                        val barSpace = 0.05f // space between bars within group
-                        barData.groupBars(0f, groupSpace, barSpace)
+                            val groupSpace = 0.2f
+                            val barSpace = 0.05f // space between bars within group
+                            barData.groupBars(0f, groupSpace, barSpace)
 
-                        data = barData
-                        setVisibleXRangeMaximum(5f) //shows limited range
-                        invalidate()
+                            data = barData
+                            setVisibleXRangeMaximum(5f) //shows limited range
+                            invalidate()
 
-                        xAxis.apply {
-                            valueFormatter = IndexAxisValueFormatter(labels)
-                            position = XAxis.XAxisPosition.BOTTOM
-                            granularity = 1f
-                            labelRotationAngle = 0f
-                            setCenterAxisLabels(true)
-                            axisMinimum = 0f
-                            axisMaximum = dailyStats.size.toFloat()
+                            xAxis.apply {
+                                valueFormatter = IndexAxisValueFormatter(labels)
+                                position = XAxis.XAxisPosition.BOTTOM
+                                granularity = 1f
+                                labelRotationAngle = 0f
+                                setCenterAxisLabels(true)
+                                axisMinimum = 0f
+                                axisMaximum = dailyStats.size.toFloat()
+                            }
+                            axisLeft.axisMinimum = 0f
+                            axisRight.isEnabled = false
+                            description.isEnabled = false
+                            legend.isEnabled = true
+
+                            setFitBars(true)
+                            invalidate()
                         }
-                        axisLeft.axisMinimum = 0f
-                        axisRight.isEnabled = false
-                        description.isEnabled = false
-                        legend.isEnabled = true
-
-                        setFitBars(true)
-                        invalidate()
-                    }
-                }, modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-            )
-
+                    }, modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(1.dp))
             Text(
                 text = "correct vs total per day",
