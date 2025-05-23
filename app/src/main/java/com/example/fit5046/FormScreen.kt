@@ -1,8 +1,9 @@
-
 package com.example.fit5046
 
 import android.app.DatePickerDialog
 import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,13 +15,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,7 +34,6 @@ fun FormScreen(navController: NavHostController) {
     val preferenceManager = remember { PreferenceManager(context) }
     val scope = rememberCoroutineScope()
 
-    // 状态管理
     var isLoading by remember { mutableStateOf(true) }
     var isEditing by remember { mutableStateOf(false) }
 
@@ -41,17 +44,14 @@ fun FormScreen(navController: NavHostController) {
     var school by remember { mutableStateOf("") }
     var subjectsOfInterest by remember { mutableStateOf("") }
 
-    // 下拉展开状态
     var genderExpanded by remember { mutableStateOf(false) }
     var educationExpanded by remember { mutableStateOf(false) }
     var subjectsExpanded by remember { mutableStateOf(false) }
 
-    // 下拉选项
     val genderOptions = listOf("Male", "Female")
     val educationOptions = listOf("Primary School", "Junior Secondary", "Senior Secondary")
     val subjectOptions = listOf("English", "Math", "Science")
 
-    // 日期选择器
     val calendar = Calendar.getInstance()
     val datePickerDialog = DatePickerDialog(
         context,
@@ -59,7 +59,6 @@ fun FormScreen(navController: NavHostController) {
         calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)
     )
 
-    // 加载本地数据
     LaunchedEffect(Unit) {
         val prefs = preferenceManager.userPreferencesFlow.first()
         name = prefs.name
@@ -71,163 +70,184 @@ fun FormScreen(navController: NavHostController) {
         isLoading = false
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFFFFF3E0), Color(0xFFFFECB3))
+                )
+            )
     ) {
-        Text("👤 User Info", fontSize = 26.sp, fontWeight = FontWeight.Bold)
-
-        Spacer(Modifier.height(16.dp))
-        if (isLoading) {
-            CircularProgressIndicator()
-            return@Column
-        }
-
-        // Name
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            readOnly = !isEditing,
-            enabled = isEditing,
-            leadingIcon = { Icon(Icons.Default.Person, null) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // Gender
-        ExposedDropdownMenuBox(expanded = genderExpanded, onExpandedChange = { genderExpanded = !genderExpanded }) {
-            OutlinedTextField(
-                value = gender,
-                onValueChange = {},
-                readOnly = true,
-                enabled = isEditing,
-                label = { Text("Gender") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor()
-            )
-            ExposedDropdownMenu(genderExpanded, onDismissRequest = { genderExpanded = false }) {
-                genderOptions.forEach {
-                    DropdownMenuItem(text = { Text(it) }, onClick = {
-                        gender = it
-                        genderExpanded = false
-                    })
-                }
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Education
-        ExposedDropdownMenuBox(expanded = educationExpanded, onExpandedChange = { educationExpanded = !educationExpanded }) {
-            OutlinedTextField(
-                value = educationalBackground,
-                onValueChange = {},
-                readOnly = true,
-                enabled = isEditing,
-                label = { Text("Educational Background") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = educationExpanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor()
-            )
-            ExposedDropdownMenu(educationExpanded, onDismissRequest = { educationExpanded = false }) {
-                educationOptions.forEach {
-                    DropdownMenuItem(text = { Text(it) }, onClick = {
-                        educationalBackground = it
-                        educationExpanded = false
-                    })
-                }
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Date of Birth
-        OutlinedTextField(
-            value = dateOfBirth,
-            onValueChange = {},
-            readOnly = true,
-            enabled = isEditing,
-            label = { Text("Date of Birth") },
-            trailingIcon = {
-                Icon(Icons.Default.DateRange, null, modifier = Modifier.clickable(enabled = isEditing) {
-                    datePickerDialog.show()
-                })
-            },
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = isEditing) { datePickerDialog.show() }
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // School
-        OutlinedTextField(
-            value = school,
-            onValueChange = { school = it },
-            readOnly = !isEditing,
-            enabled = isEditing,
-            label = { Text("School (Optional)") },
-            leadingIcon = { Icon(Icons.Default.LocationCity, null) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // Subjects
-        ExposedDropdownMenuBox(expanded = subjectsExpanded, onExpandedChange = { subjectsExpanded = !subjectsExpanded }) {
-            OutlinedTextField(
-                value = subjectsOfInterest,
-                onValueChange = {},
-                readOnly = true,
-                enabled = isEditing,
-                label = { Text("Subjects of Interest") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subjectsExpanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor()
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.form),
+                contentDescription = "Kids Illustration",
+                modifier = Modifier
+                    .height(120.dp)
+                    .fillMaxWidth()
             )
-            ExposedDropdownMenu(subjectsExpanded, onDismissRequest = { subjectsExpanded = false }) {
-                subjectOptions.forEach {
-                    DropdownMenuItem(text = { Text(it) }, onClick = {
-                        subjectsOfInterest = it
-                        subjectsExpanded = false
-                    })
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text("📝 Let's Get to Know You!", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color(0xFF5D4037))
+
+            Spacer(Modifier.height(16.dp))
+            if (isLoading) {
+                CircularProgressIndicator()
+                return@Column
+            }
+
+            fun formField(label: String, value: String, icon: @Composable (() -> Unit)? = null, trailing: @Composable (() -> Unit)? = null, onClick: (() -> Unit)? = null): @Composable () -> Unit = {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = {},
+                    label = { Text(label) },
+                    readOnly = true,
+                    enabled = isEditing,
+                    leadingIcon = icon,
+                    trailingIcon = trailing,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = isEditing) { onClick?.invoke() }
+                )
+            }
+
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
+                readOnly = !isEditing,
+                enabled = isEditing,
+                leadingIcon = { Icon(Icons.Default.Person, null) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            ExposedDropdownMenuBox(expanded = genderExpanded, onExpandedChange = { genderExpanded = !genderExpanded }) {
+                OutlinedTextField(
+                    value = gender,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = isEditing,
+                    label = { Text("Gender") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                )
+                ExposedDropdownMenu(genderExpanded, onDismissRequest = { genderExpanded = false }) {
+                    genderOptions.forEach {
+                        DropdownMenuItem(text = { Text(it) }, onClick = {
+                            gender = it
+                            genderExpanded = false
+                        })
+                    }
                 }
             }
-        }
 
-        Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(16.dp))
 
-        // Bottom Button
-        if (isEditing) {
+            ExposedDropdownMenuBox(expanded = educationExpanded, onExpandedChange = { educationExpanded = !educationExpanded }) {
+                OutlinedTextField(
+                    value = educationalBackground,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = isEditing,
+                    label = { Text("Educational Background") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = educationExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                )
+                ExposedDropdownMenu(educationExpanded, onDismissRequest = { educationExpanded = false }) {
+                    educationOptions.forEach {
+                        DropdownMenuItem(text = { Text(it) }, onClick = {
+                            educationalBackground = it
+                            educationExpanded = false
+                        })
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            formField(
+                label = "Date of Birth",
+                value = dateOfBirth,
+                trailing = {
+                    Icon(Icons.Default.DateRange, null, modifier = Modifier.clickable(enabled = isEditing) {
+                        datePickerDialog.show()
+                    })
+                },
+                onClick = { datePickerDialog.show() }
+            )()
+
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = school,
+                onValueChange = { school = it },
+                readOnly = !isEditing,
+                enabled = isEditing,
+                label = { Text("School (Optional)") },
+                leadingIcon = { Icon(Icons.Default.School, null) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            ExposedDropdownMenuBox(expanded = subjectsExpanded, onExpandedChange = { subjectsExpanded = !subjectsExpanded }) {
+                OutlinedTextField(
+                    value = subjectsOfInterest,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = isEditing,
+                    label = { Text("Subjects of Interest") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subjectsExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                )
+                ExposedDropdownMenu(subjectsExpanded, onDismissRequest = { subjectsExpanded = false }) {
+                    subjectOptions.forEach {
+                        DropdownMenuItem(text = { Text(it) }, onClick = {
+                            subjectsOfInterest = it
+                            subjectsExpanded = false
+                        })
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+
             Button(
                 onClick = {
-                    scope.launch {
-                        if (name.isEmpty() || gender.isEmpty() || educationalBackground.isEmpty() || dateOfBirth.isEmpty() || subjectsOfInterest.isEmpty()) {
-                            Toast.makeText(context, "Please complete all required fields", Toast.LENGTH_SHORT).show()
-                            return@launch
+                    if (isEditing) {
+                        scope.launch {
+                            if (name.isEmpty() || gender.isEmpty() || educationalBackground.isEmpty() || dateOfBirth.isEmpty() || subjectsOfInterest.isEmpty()) {
+                                Toast.makeText(context, "Please complete all required fields", Toast.LENGTH_SHORT).show()
+                                return@launch
+                            }
+                            val prefs = UserPreference(name, gender, educationalBackground, dateOfBirth, school, subjectsOfInterest)
+                            preferenceManager.saveUserPreferences(prefs)
+                            isEditing = false
+                            Toast.makeText(context, "Saved locally", Toast.LENGTH_SHORT).show()
                         }
-                        val prefs = UserPreference(name, gender, educationalBackground, dateOfBirth, school, subjectsOfInterest)
-                        preferenceManager.saveUserPreferences(prefs)
-                        isEditing = false
-                        Toast.makeText(context, "Saved locally", Toast.LENGTH_SHORT).show()
+                    } else {
+                        isEditing = true
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("💾 Save")
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = if (isEditing) Color(0xFF66BB6A) else Color(0xFF42A5F5))
+            )
+            {
+                Text(if (isEditing) "💾 Save" else "✏️ Edit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-        } else {
-            Button(
-                onClick = { isEditing = true },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("✏️ Edit")
-            }
+
+            Spacer(modifier = Modifier.height(72.dp))
         }
     }
 }
