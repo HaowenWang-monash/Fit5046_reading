@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "641105226396",
+    "firebase_url": "https://fit5046-9e081-default-rtdb.firebaseio.com",
+    "project_id": "fit5046-9e081",
+    "storage_bucket": "fit5046-9e081.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:641105226396:android:e84a3f7569e4fc07ad5b59",
+        "android_client_info": {
+          "package_name": "com.example.fit5046"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHn2DEXOzWJICuHRlE0CaBN_lRaZsBz70"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
