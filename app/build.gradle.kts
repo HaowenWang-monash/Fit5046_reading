@@ -55,11 +55,21 @@ dependencies {
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation(libs.mpandroidchart)
 
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.5.0"))
+//    implementation 'com.google.firebase:firebase-auth-ktx'
+    implementation("com.google.firebase:firebase-database-ktx")
+
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
     implementation ("com.google.firebase:firebase-auth-ktx:22.3.1")
 
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
-
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     add("kapt", "androidx.room:room-compiler:2.6.1")

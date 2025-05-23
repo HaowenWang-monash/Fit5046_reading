@@ -14,3 +14,14 @@ data class QuizDailyStat(
     val totalQuestions: Int,
     val correctAnswers: Int
 )
+
+data class DailyStat(
+    val date: String,
+    val correctAnswers: Int,
+    val totalQuestions: Int
+)
+
+data class CategoryStat(
+    val category: String,
+    val correctAnswers: Int
+)

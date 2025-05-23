@@ -1,12 +1,13 @@
 package com.example.fit5046
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,148 +34,172 @@ fun ScienceQuizScreen() {
     var score by remember { mutableStateOf<Int?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var expanded by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("🔬 Science Quiz", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("🔬 Science Quiz", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("Step 1: Choose a topic", fontSize = 16.sp)
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Choose a topic:")
-
-        var expanded by remember { mutableStateOf(false) }
-
-        Box {
-            OutlinedButton(onClick = { expanded = true }) {
-                Text(selectedTopic)
-            }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                topics.forEach {
-                    DropdownMenuItem(
-                        text = { Text(it) },
-                        onClick = {
-                            selectedTopic = it
-                            expanded = false
-                        }
-                    )
+            Box {
+                OutlinedButton(onClick = { expanded = true }) {
+                    Text(selectedTopic)
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    topics.forEach {
+                        DropdownMenuItem(
+                            text = { Text(it) },
+                            onClick = {
+                                selectedTopic = it
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = {
-            scope.launch {
-                isLoading = true
-                score = null
-                userAnswers.clear()
-                quiz = emptyList()
+            Button(onClick = {
+                scope.launch {
+                    isLoading = true
+                    score = null
+                    userAnswers.clear()
+                    quiz = emptyList()
 
-                try {
-                    val prompt = """
-                        Based on "$selectedTopic", generate 3 multiple-choice science questions for children.
-                        Return raw JSON array like:
-                        [{"question":"...","options":["A...","B...","C...","D..."],"correct":"A"}, ...]
-                    """.trimIndent()
+                    try {
+                        val prompt = """
+                            Based on "$selectedTopic", generate 3 multiple-choice science questions for children.
+                            Return raw JSON array like:
+                            [{"question":"...","options":["A...","B...","C...","D..."],"correct":"A"}]
+                        """.trimIndent()
 
-                    val response = RetrofitClient.api.getResponse(
-                        ChatRequest(
-                            model = "mistralai/mistral-7b-instruct",
-                            messages = listOf(
-                                ChatMessage("system", "You generate science quizzes for kids."),
-                                ChatMessage("user", prompt)
+                        val response = RetrofitClient.api.getResponse(
+                            ChatRequest(
+                                model = "mistralai/mistral-7b-instruct",
+                                messages = listOf(
+                                    ChatMessage("system", "You generate science quizzes for kids."),
+                                    ChatMessage("user", prompt)
+                                )
                             )
                         )
-                    )
 
-                    val json = response.choices.first().message.content
-                        .replace("```json", "")
-                        .replace("```", "")
-                        .replace("“", "\"")
-                        .replace("”", "\"")
-                        .trim()
+                        val json = response.choices.first().message.content
+                            .replace("```json", "")
+                            .replace("```", "")
+                            .replace("“", "\"")
+                            .replace("”", "\"")
+                            .trim()
 
-                    quiz = Gson().fromJson(json, Array<QuizQuestion>::class.java).toList()
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                        quiz = Gson().fromJson(json, Array<QuizQuestion>::class.java).toList()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+
+                    isLoading = false
                 }
-
-                isLoading = false
-            }
-        }) {
-            Text("🚀 Generate Quiz")
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (isLoading) {
-            CircularProgressIndicator()
-        }
-
-        quiz.forEachIndexed { index, q ->
-            Text("${index + 1}. ${q.question}", fontWeight = FontWeight.Medium)
-            q.options.forEach { option ->
-                val letter = option.substringBefore(". ").trim()
-                val selected = userAnswers[index] == letter
-                val isCorrect = score != null && q.correct == letter
-
-                val color = if (score != null) {
-                    if (isCorrect) MaterialTheme.colorScheme.primary
-                    else if (selected) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSurface
-                } else MaterialTheme.colorScheme.onSurface
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(
-                        selected = selected,
-                        onClick = { userAnswers[index] = letter },
-                        enabled = score == null
-                    )
-                    Text(option, color = color)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        if (quiz.isNotEmpty() && score == null) {
-            Button(onClick = {
-                val correctCount = quiz.indices.count { i ->
-                    userAnswers[i]?.trim() == quiz[i].correct.trim()
-                }
-                score = correctCount
-
-                val today = LocalDate.now().toString()
-                val stat = QuizDailyStat(
-                    userId = userId,
-                    date = today,
-                    category = "Science",
-                    totalQuestions = quiz.size,
-                    correctAnswers = correctCount
-                )
-
-                scope.launch { dao.insert(stat) }
             }) {
-                Text("✅ Submit Answers")
+                Text("🚀 Generate Quiz")
             }
         }
 
-        score?.let {
-            Text(
-                text = "You got $it/${quiz.size} correct!",
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            contentPadding = PaddingValues(bottom = 100.dp)
+        ) {
+            if (isLoading) {
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+
+            if (quiz.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Step 2: Answer the questions below!", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                itemsIndexed(quiz) { index, q ->
+                    Text("${index + 1}. ${q.question}", fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    q.options.forEach { option ->
+                        val letter = option.substringBefore(". ").trim()
+                        val selected = userAnswers[index] == letter
+                        val isCorrect = score != null && q.correct == letter
+
+                        val color = when {
+                            score == null -> MaterialTheme.colorScheme.onSurface
+                            isCorrect -> Color(0xFF66BB6A)
+                            selected -> Color(0xFFEF5350)
+                            else -> MaterialTheme.colorScheme.onSurface
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = selected,
+                                onClick = { userAnswers[index] = letter },
+                                enabled = score == null
+                            )
+                            Text(option, color = color)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                item {
+                    if (score == null) {
+                        Button(onClick = {
+                            val correctCount = quiz.indices.count { i ->
+                                userAnswers[i]?.trim() == quiz[i].correct.trim()
+                            }
+                            score = correctCount
+
+                            val today = LocalDate.now().toString()
+                            val stat = QuizDailyStat(
+                                id = 0,
+                                userId = userId,
+                                date = today,
+                                category = "Science",
+                                totalQuestions = quiz.size,
+                                correctAnswers = correctCount
+                            )
+
+                            scope.launch { dao.insert(stat) }
+                        }) {
+                            Text("✅ Submit Answers")
+                        }
+                    }
+
+                    score?.let {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "🎉 You got $it/${quiz.size} correct!",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF6D4C41)
+                        )
+                    }
+                }
+            }
         }
     }
 }
+
 
 
 
