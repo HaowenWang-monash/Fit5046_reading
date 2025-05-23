@@ -13,7 +13,24 @@ import com.example.fit5046.data.AppDatabase
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.fit5046.work.ClearQuizStatsWorker
+@Composable
+fun TriggerWorkerButton() {
+    val context = LocalContext.current
+
+    Button(onClick = {
+        val request = OneTimeWorkRequestBuilder<ClearQuizStatsWorker>().build()
+        WorkManager.getInstance(context).enqueue(request)
+    }) {
+        Text("🧪 Test Clear Worker")
+    }
+}
 @Composable
 fun TestDatabaseScreen() {
     val context = LocalContext.current
@@ -25,7 +42,7 @@ fun TestDatabaseScreen() {
             .fillMaxSize()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
         Text("🧪 Test Room Database", style = MaterialTheme.typography.headlineMedium)
 
@@ -50,8 +67,11 @@ fun TestDatabaseScreen() {
             Text("🔍 Print All Stats to Logcat")
         }
 
+        Spacer(modifier = Modifier.height(36.dp))
+
+
+        TriggerWorkerButton()
     }
 }
-
 
 

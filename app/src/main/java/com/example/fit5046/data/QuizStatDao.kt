@@ -34,6 +34,8 @@ interface QuizStatDao {
     suspend fun getDailyCorrectAnswersForCategory(userId: String, category: String): List<DailyStat>
 
 
+    @Query("DELETE FROM quiz_daily_stats")
+    suspend fun clearAll()
 
 
 
